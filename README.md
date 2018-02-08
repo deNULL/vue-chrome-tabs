@@ -3,7 +3,9 @@
 [![npm](https://img.shields.io/npm/v/vue-chrome-tabs.svg) ![npm](https://img.shields.io/npm/dm/vue-chrome-tabs.svg)](https://www.npmjs.com/package/vue-chrome-tabs)
 [![vue2](https://img.shields.io/badge/vue-2.x-brightgreen.svg)](https://vuejs.org/)
 
-A Vue component for Chrome-like tabs (based on chrome-tabs library)
+A Vue component for Chrome-like tabs (based on [chrome-tabs library](https://github.com/adamschwartz/chrome-tabs)).
+
+[Demo](https://denull.github.io/vue-chrome-tabs/demo.html).
 
 ## Table of contents
 
@@ -32,9 +34,9 @@ Use specific components:
 
 ```javascript
 import Vue from 'vue'
-import { Test } from 'vue-chrome-tabs'
+import { ChromeTabs } from 'vue-chrome-tabs'
 
-Vue.component('test', Test)
+Vue.component('chrome-tabs', ChromeTabs)
 ```
 
 **⚠️ A css file is included when importing the package. You may have to setup your bundler to embed the css in your page.**
@@ -54,9 +56,9 @@ Use specific components:
 
 ```javascript
 import 'vue-chrome-tabs/dist/vue-chrome-tabs.css'
-import { Test } from 'vue-chrome-tabs/dist/vue-chrome-tabs.common'
+import { ChromeTabs } from 'vue-chrome-tabs/dist/vue-chrome-tabs.common'
 
-Vue.component('test', Test)
+Vue.component('chrome-tabs', ChromeTabs)
 ```
 
 **⚠️ You may have to setup your bundler to embed the css file in your page.**
@@ -81,7 +83,7 @@ Vue.use(VueChromeTabs)
 Use specific components:
 
 ```javascript
-Vue.component('test', VueChromeTabs.Test)
+Vue.component('chrome-tabs', VueChromeTabs.ChromeTabs)
 ```
 
 ## Source import
@@ -99,9 +101,9 @@ Use specific components:
 
 ```javascript
 import Vue from 'vue'
-import { Test } from 'vue-chrome-tabs/src'
+import { ChromeTabs } from 'vue-chrome-tabs/src'
 
-Vue.component('test', Test)
+Vue.component('chrome-tabs', ChromeTabs)
 ```
 
 **⚠️ You need to configure your bundler to compile `.vue` files.** More info [in the official documentation](https://vuejs.org/v2/guide/single-file-components.html).
