@@ -88,8 +88,6 @@ export default {
 
   methods: {
     layoutTabs () {
-      const tabWidth = this.tabWidth
-
       this.cleanUpPreviouslyDraggedTabs()
 
       requestAnimationFrame(() => {
@@ -235,7 +233,7 @@ export default {
           const currentTabPositionX = originalTabPositionX + moveVector.x
           const destinationIndex = Math.max(0, Math.min(this.tabs.length, Math.floor((currentTabPositionX + (tabEffectiveWidth / 2)) / tabEffectiveWidth)))
 
-          if (destinationIndex != currentIndex) {
+          if (destinationIndex !== currentIndex) {
             const tab = this.tabs.splice(currentIndex, 1)[0]
             this.tabs.splice(destinationIndex, 0, tab)
             tabEls.splice(destinationIndex, 0, tabEls.splice(currentIndex, 1)[0])
