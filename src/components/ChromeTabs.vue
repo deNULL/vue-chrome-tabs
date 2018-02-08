@@ -62,7 +62,7 @@ export default {
       default: null,
     },
     tabId: {
-      type: Object,
+      type: null, // anything
       default: null,
     },
   },
