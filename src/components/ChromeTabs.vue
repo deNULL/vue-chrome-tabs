@@ -138,6 +138,8 @@ export default {
         this.layoutTabs()
         this.setupDraggabilly()
       })
+
+      this.$emit('add', tabProperties, tabIndex, this.tabs)
     },
     indexOf (tab) {
       if (tab === null) {
@@ -172,12 +174,14 @@ export default {
         }
       }
 
-      this.tabs.splice(tabIndex, 1)
+      let tab = this.tabs.splice(tabIndex, 1)[0]
 
       this.$nextTick(() => {
         this.layoutTabs()
         this.setupDraggabilly()
       })
+
+      this.$emit('remove', tab, tabIndex, this.tabs)
     },
     setupDraggabilly () {
       const tabEls = this.$refs.tabs || []
@@ -232,8 +236,11 @@ export default {
           const destinationIndex = Math.max(0, Math.min(this.tabs.length, Math.floor((currentTabPositionX + (tabEffectiveWidth / 2)) / tabEffectiveWidth)))
 
           if (destinationIndex != currentIndex) {
-            this.tabs.splice(destinationIndex, 0, this.tabs.splice(currentIndex, 1)[0])
+            const tab = this.tabs.splice(currentIndex, 1)[0]
+            this.tabs.splice(destinationIndex, 0, tab)
             tabEls.splice(destinationIndex, 0, tabEls.splice(currentIndex, 1)[0])
+
+            this.$emit('reorder', tab, currentIndex, destinationIndex, this.tabs)
           }
         })
       })
