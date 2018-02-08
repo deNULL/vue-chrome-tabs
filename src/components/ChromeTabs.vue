@@ -1,19 +1,19 @@
 <template>
   <div class="chrome-tabs" :data-chrome-tabs-instance-id="instanceId">
     <div class="chrome-tabs-content" ref="content" @dblclick="addDefaultTab()">
-      <div v-for="(tab, tabIndex) in tabs"
+      <div v-for="(tab, tabIndex) in value"
           :key="tab.id"
           ref="tabs"
           class="chrome-tab" 
           :class="{
-            'chrome-tab-current': (tab.id === currentTab),
+            'chrome-tab-current': (tab.id === tabId),
           }"
           :style="{
             width: tabWidth + 'px',
-            zIndex: (tab.id === currentTab) ? (tabs.length + 2) : (tabs.length - tabIndex),
+            zIndex: (tab.id === tabId) ? (value.length + 2) : (value.length - tabIndex),
           }"
-          @dblclick.stop="currentTab = tab.id"
-          @click.stop="currentTab = tab.id">
+          @dblclick.stop="$emit('update:tabId', tab.id)"
+          @click.stop="$emit('update:tabId', tab.id)">
         <div class="chrome-tab-background">
           <svg version="1.1" xmlns="http://www.w3.org/2000/svg"><defs><symbol id="topleft" viewBox="0 0 214 29" ><path d="M14.3 0.1L214 0.1 214 29 0 29C0 29 12.2 2.6 13.2 1.1 14.3-0.4 14.3 0.1 14.3 0.1Z"/></symbol><symbol id="topright" viewBox="0 0 214 29"><use xlink:href="#topleft"/></symbol><clipPath id="crop"><rect class="mask" width="100%" height="100%" x="0"/></clipPath></defs><svg width="50%" height="100%" transfrom="scale(-1, 1)"><use xlink:href="#topleft" width="214" height="29" class="chrome-tab-background"/><use xlink:href="#topleft" width="214" height="29" class="chrome-tab-shadow"/></svg><g transform="scale(-1, 1)"><svg width="50%" height="100%" x="-100%" y="0"><use xlink:href="#topright" width="214" height="29" class="chrome-tab-background"/><use xlink:href="#topright" width="214" height="29" class="chrome-tab-shadow"/></svg></g></svg>
         </div>
@@ -25,7 +25,7 @@
     <div
       ref="bottom"
       class="chrome-tabs-bottom-bar"
-      :style="{ zIndex: tabs.length + 1 }"></div>
+      :style="{ zIndex: value.length + 1 }"></div>
   </div>
 </template>
 
@@ -41,13 +41,13 @@ export default {
   name: 'chrome-tabs',
 
   props: {
+    value: {
+      type: Array,
+      required: true,
+    },
     tabOverlapDistance: {
       type: Number,
       default: 14,
-    },
-    tabWidth: {
-      type: Number,
-      default: 243,
     },
     minWidth: {
       type: Number,
@@ -61,28 +61,31 @@ export default {
       type: Object,
       default: null,
     },
+    tabId: {
+      type: Object,
+      default: null,
+    },
   },
 
   data () {
     return {
-      tabs: [],
-      currentTab: null,
+      added: {},
       instanceId: instanceId++,
-      tabId: 0,
+      maxTabId: 0,
     }
   },
 
   computed: {
     tabWidth () {
       const tabsContentWidth = this.$refs.content.clientWidth - this.tabOverlapDistance
-      const width = (tabsContentWidth / this.tabs.length) + this.tabOverlapDistance
+      const width = (tabsContentWidth / this.value.length) + this.tabOverlapDistance
       return Math.max(this.minWidth, Math.min(this.maxWidth, width))
     },
     tabEffectiveWidth () {
       return this.tabWidth - this.tabOverlapDistance
     },
     currentIndex () {
-      return this.indexOf(this.currentTab)
+      return this.indexOf(this.tabId)
     },
   },
 
@@ -92,7 +95,7 @@ export default {
 
       requestAnimationFrame(() => {
         let styleHTML = ''
-        this.tabs.forEach((left, i) => {
+        this.value.forEach((left, i) => {
           styleHTML += `
             .chrome-tabs[data-chrome-tabs-instance-id="${this.instanceId}"] .chrome-tab:nth-child(${i + 1}) {
               transform: translate3d(${i * this.tabEffectiveWidth}px, 0, 0)
@@ -116,35 +119,27 @@ export default {
       tabProperties = Object.assign({}, defaultTabProperties, tabProperties)
       if ('id' in tabProperties) {
         if (+tabProperties.id === tabProperties.id) {
-          this.tabId = Math.max(this.tabId, tabProperties.id) + 1
+          this.maxTabId = Math.max(this.maxTabId, tabProperties.id) + 1
         }
       } else {
-        tabProperties.id = this.tabId++
+        tabProperties.id = this.maxTabId++
       }
 
-      const tabIndex = this.tabs.push(tabProperties) - 1
+      let newValue = this.value.slice(0)
+      const tabIndex = newValue.push(tabProperties) - 1
 
+      this.$emit('add', tabProperties, tabIndex, newValue)
+      this.$emit('input', newValue)
       if (!inBackground) {
-        this.currentTab = tabProperties.id
+        this.$emit('update:tabId', tabProperties.id)
       }
-
-      this.$nextTick(() => {
-        const el = this.$refs.tabs[tabIndex]
-        el.classList.add('chrome-tab-just-added')
-        setTimeout(() => el.classList.remove('chrome-tab-just-added'), 500)
-
-        this.layoutTabs()
-        this.setupDraggabilly()
-      })
-
-      this.$emit('add', tabProperties, tabIndex, this.tabs)
     },
     indexOf (tab) {
       if (tab === null) {
         return -1
       }
-      for (let i = 0; i < this.tabs.length; i++) {
-        if (this.tabs[i] === tab || this.tabs[i].id === tab) {
+      for (let i = 0; i < this.value.length; i++) {
+        if (this.value[i] === tab || this.value[i].id === tab) {
           return i
         }
       }
@@ -156,30 +151,31 @@ export default {
       if (index === -1) {
         return null
       } else {
-        const tab = this.tabs[index]
+        const tab = this.value[index]
         this.removeTabAt(index)
         return tab
       }
     },
     removeTabAt (tabIndex) {
-      if (this.currentTab === this.tabs[tabIndex].id) {
+      let newTabId = this.tabId
+      if (this.tabId === this.value[tabIndex].id) {
         if (tabIndex > 0) {
-          this.currentTab = this.tabs[tabIndex - 1].id
-        } else if (tabIndex < this.tabs.length - 1) {
-          this.currentTab = this.tabs[tabIndex + 1].id
+          newTabId = this.value[tabIndex - 1].id
+        } else if (tabIndex < this.value.length - 1) {
+          newTabId = this.value[tabIndex + 1].id
         } else {
-          this.currentTab = null
+          newTabId = null
         }
       }
 
-      let tab = this.tabs.splice(tabIndex, 1)[0]
+      let newValue = this.value.slice(0)
+      let tab = newValue.splice(tabIndex, 1)[0]
 
-      this.$nextTick(() => {
-        this.layoutTabs()
-        this.setupDraggabilly()
-      })
-
-      this.$emit('remove', tab, tabIndex, this.tabs)
+      this.$emit('remove', tab, tabIndex, newValue)
+      this.$emit('input', newValue)
+      if (newTabId !== this.tabId) {
+        this.$emit('update:tabId', newTabId)
+      }
     },
     setupDraggabilly () {
       const tabEls = this.$refs.tabs || []
@@ -231,14 +227,19 @@ export default {
           const currentIndex = tabEls.indexOf(tabEl)
 
           const currentTabPositionX = originalTabPositionX + moveVector.x
-          const destinationIndex = Math.max(0, Math.min(this.tabs.length, Math.floor((currentTabPositionX + (tabEffectiveWidth / 2)) / tabEffectiveWidth)))
+          const destinationIndex =
+            Math.max(0,
+              Math.min(this.value.length,
+                Math.floor((currentTabPositionX + (tabEffectiveWidth / 2)) / tabEffectiveWidth)))
 
           if (destinationIndex !== currentIndex) {
-            const tab = this.tabs.splice(currentIndex, 1)[0]
-            this.tabs.splice(destinationIndex, 0, tab)
+            let newValue = this.value.slice(0)
+            const tab = newValue.splice(currentIndex, 1)[0]
+            newValue.splice(destinationIndex, 0, tab)
             tabEls.splice(destinationIndex, 0, tabEls.splice(currentIndex, 1)[0])
 
-            this.$emit('reorder', tab, currentIndex, destinationIndex, this.tabs)
+            this.$emit('reorder', tab, currentIndex, destinationIndex, newValue)
+            this.$emit('input', newValue)
           }
         })
       })
@@ -258,6 +259,26 @@ export default {
     this.layoutTabs()
     this.setupDraggabilly()
   },
+
+  watch: {
+    value (tabs) {
+      this.$nextTick(() => {
+        let newAdded = {}
+        tabs.forEach((tab, tabIndex) => {
+          if (!(tab.id in this.added)) {
+            const el = this.$refs.tabs[tabIndex]
+            el.classList.add('chrome-tab-just-added')
+            setTimeout(() => el.classList.remove('chrome-tab-just-added'), 500)
+          }
+          newAdded[tab.id] = true
+        })
+        this.$set(this, 'added', newAdded)
+
+        this.layoutTabs()
+        this.setupDraggabilly()
+      })
+    },
+  },
 }
 </script>
 
@@ -269,7 +290,10 @@ export default {
   height: 4.2em;
   background: linear-gradient(#dad9da, #d9d8d9);
   padding: 1em 1.2em 0.45em 1.2em;
+  /*
+  It can be set from outside of the component if needed
   border-radius: 0.5em 0.5em 0 0;
+  */
   box-shadow: 0 0.05em #b7b7b7;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";

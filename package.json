@@ -1,7 +1,7 @@
 {
   "name": "vue-chrome-tabs",
   "description": "A Vue component for Chrome-like tabs (based on chrome-tabs library)",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Denis Olshin",
     "email": "me@denull.ru"
