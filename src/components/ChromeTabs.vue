@@ -10,7 +10,7 @@
           }"
           :style="{
             width: tabWidth + 'px',
-            zIndex: (tab.id === currentTab) ? (tabs.length + 1) : (tabs.length - tabIndex),
+            zIndex: (tab.id === currentTab) ? (tabs.length + 2) : (tabs.length - tabIndex),
           }"
           @click="currentTab = tab.id">
         <div class="chrome-tab-background">
@@ -76,16 +76,8 @@ export default {
     tabEffectiveWidth () {
       return this.tabWidth - this.tabOverlapDistance
     },
-    tabPositions () {
-      const tabEffectiveWidth = this.tabEffectiveWidth
-      let left = 0
-      let positions = []
-
-      this.tabs.forEach((tabEl, i) => {
-        positions.push(left)
-        left += tabEffectiveWidth
-      })
-      return positions
+    currentIndex () {
+      return this.indexOf(this.currentTab)
     },
   },
 
@@ -97,10 +89,10 @@ export default {
 
       requestAnimationFrame(() => {
         let styleHTML = ''
-        this.tabPositions.forEach((left, i) => {
+        this.tabs.forEach((left, i) => {
           styleHTML += `
             .chrome-tabs[data-chrome-tabs-instance-id="${this.instanceId}"] .chrome-tab:nth-child(${i + 1}) {
-              transform: translate3d(${left}px, 0, 0)
+              transform: translate3d(${i * this.tabEffectiveWidth}px, 0, 0)
             }
           `
         })
@@ -137,14 +129,27 @@ export default {
         this.setupDraggabilly()
       })
     },
-    removeTab (tab) {
+    indexOf (tab) {
+      if (tab === null) {
+        return -1
+      }
       for (let i = 0; i < this.tabs.length; i++) {
         if (this.tabs[i] === tab || this.tabs[i].id === tab) {
-          this.removeTabAt(i);
-          return this.tabs[i];
+          return i
         }
       }
-      return null;
+      return -1
+    },
+    removeTab (tab) {
+      const index = this.indexOf(tab)
+
+      if (index === -1) {
+        return null
+      } else {
+        const tab = this.tabs[index]
+        this.removeTabAt(index)
+        return tab
+      }
     },
     removeTabAt (tabIndex) {
       if (this.currentTab === this.tabs[tabIndex].id) {
@@ -167,12 +172,11 @@ export default {
     setupDraggabilly () {
       const tabEls = this.$refs.tabs || []
       const tabEffectiveWidth = this.tabEffectiveWidth
-      const tabPositions = this.tabPositions
 
       this.draggabillyInstances.forEach(draggabillyInstance => draggabillyInstance.destroy())
 
       tabEls.forEach((tabEl, originalIndex) => {
-        const originalTabPositionX = tabPositions[originalIndex]
+        const originalTabPositionX = originalIndex * this.tabEffectiveWidth
         const draggabillyInstance = new Draggabilly(tabEl, {
           axis: 'x',
           containment: this.$refs.content,
@@ -212,17 +216,14 @@ export default {
 
         draggabillyInstance.on('dragMove', (event, pointer, moveVector) => {
           // Current index be computed within the event since it can change during the dragMove
-          const tabEls = this.$refs.tabs || []
           const currentIndex = tabEls.indexOf(tabEl)
 
           const currentTabPositionX = originalTabPositionX + moveVector.x
-          const destinationIndex = Math.max(0, Math.min(tabEls.length, Math.floor((currentTabPositionX + (tabEffectiveWidth / 2)) / tabEffectiveWidth)))
+          const destinationIndex = Math.max(0, Math.min(this.tabs.length, Math.floor((currentTabPositionX + (tabEffectiveWidth / 2)) / tabEffectiveWidth)))
 
-          if (destinationIndex < currentIndex) {
-            tabEl.parentNode.insertBefore(tabEl, this.$refs.tabs[destinationIndex])
-          } else
-          if (destinationIndex > currentIndex) {
-            tabEl.parentNode.insertBefore(tabEl, this.$refs.tabs[destinationIndex + 1])
+          if (destinationIndex != currentIndex) {
+            this.tabs.splice(destinationIndex, 0, this.tabs.splice(currentIndex, 1)[0])
+            tabEls.splice(destinationIndex, 0, tabEls.splice(currentIndex, 1)[0])
           }
         })
       })
