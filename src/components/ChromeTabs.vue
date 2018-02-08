@@ -1,6 +1,6 @@
 <template>
   <div class="chrome-tabs" :data-chrome-tabs-instance-id="instanceId">
-    <div class="chrome-tabs-content" ref="content">
+    <div class="chrome-tabs-content" ref="content" @dblclick="addDefaultTab()">
       <div v-for="(tab, tabIndex) in tabs"
           :key="tab.id"
           ref="tabs"
@@ -12,7 +12,8 @@
             width: tabWidth + 'px',
             zIndex: (tab.id === currentTab) ? (tabs.length + 2) : (tabs.length - tabIndex),
           }"
-          @click="currentTab = tab.id">
+          @dblclick.stop="currentTab = tab.id"
+          @click.stop="currentTab = tab.id">
         <div class="chrome-tab-background">
           <svg version="1.1" xmlns="http://www.w3.org/2000/svg"><defs><symbol id="topleft" viewBox="0 0 214 29" ><path d="M14.3 0.1L214 0.1 214 29 0 29C0 29 12.2 2.6 13.2 1.1 14.3-0.4 14.3 0.1 14.3 0.1Z"/></symbol><symbol id="topright" viewBox="0 0 214 29"><use xlink:href="#topleft"/></symbol><clipPath id="crop"><rect class="mask" width="100%" height="100%" x="0"/></clipPath></defs><svg width="50%" height="100%" transfrom="scale(-1, 1)"><use xlink:href="#topleft" width="214" height="29" class="chrome-tab-background"/><use xlink:href="#topleft" width="214" height="29" class="chrome-tab-shadow"/></svg><g transform="scale(-1, 1)"><svg width="50%" height="100%" x="-100%" y="0"><use xlink:href="#topright" width="214" height="29" class="chrome-tab-background"/><use xlink:href="#topright" width="214" height="29" class="chrome-tab-shadow"/></svg></g></svg>
         </div>
@@ -55,6 +56,10 @@ export default {
     maxWidth: {
       type: Number,
       default: 243,
+    },
+    defaultTab: {
+      type: Object,
+      default: null,
     },
   },
 
@@ -102,6 +107,11 @@ export default {
     cleanUpPreviouslyDraggedTabs () {
       if (this.$refs.tabs) {
         this.$refs.tabs.forEach((tabEl) => tabEl.classList.remove('chrome-tab-just-dragged'))
+      }
+    },
+    addDefaultTab () {
+      if (this.defaultTab !== null) {
+        this.addTab(this.defaultTab)
       }
     },
     addTab (tabProperties, inBackground) {
